@@ -1,4 +1,5 @@
-import csv, datetime
+import csv, datetime, pymysql
+import pandas as pd
 from sqlalchemy import create_engine, insert, delete, Column, text
 from sqlalchemy.types import Float, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
@@ -15,7 +16,6 @@ table_name = 'mart'
 
 # CSV 파일을 데이터프레임으로 읽어오기
 csv_file = f'/home/ubuntu/csvfile/mart_list_with_x_y_{current_date}.csv'
-# df_csv = pd.read_csv(csv_file, encoding='utf-8', index_col=0, header= None)
 
 # MySQL 데이터베이스에 연결
 db_engine = create_engine(f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_database}')
@@ -34,36 +34,50 @@ class User(Base):
 def db_table():
     if not inspect(db_engine).has_table(User.__tablename__):
         Base.metadata.create_all(db_engine)
-    else:
-        with db_engine.begin() as connection:
-            setting_stme = 'set sql_safe_updates=0;'
-            delete_stmt = delete(Base.metadata.tables[User.__tablename__])
-            # print(delete_stmt)
-            connection.execute(text(setting_stme))
-            connection.execute(delete_stmt)
-            # connection.commit()
 
 #csv to map
 def to_map(csv_file_path):
     data_list = []
     try:
-        with open(csv_file_path, 'r') as csvfile:
-            csvreader = csv.DictReader(csvfile)
-            
-            for row in csvreader:
-                data_list.append(row)
+        csvfile = pd.read_csv(csv_file_path, encoding='utf-8')
+        data_list = csvfile.to_numpy().tolist()
 
         return data_list
     except Exception as e:
         print(e)
 
 def import_data(data_list):
+    
+    connection = pymysql.connect(host = db_host, user = db_user, password = db_password, db = db_database)
+    cursor = connection.cursor()
 
-    with db_engine.connect() as connection:
-        stmt = insert(User).values(data_list)
-        # print(stmt)
-        connection.execute(stmt)
-        # connection.commit()
+    query =f"""
+    INSERT INTO {table_name} (
+        `mart_id`,
+        `name`,
+        `address`,
+        `phone`,
+        `latitude`,
+        `longitude`
+        )
+    VALUES (%s, %s, %s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE
+        `mart_id`=VALUES(`mart_id`),
+        `name`=VALUES(`name`),
+        `address`=VALUES(`address`),
+        `phone`=VALUES(`phone`),
+        `latitude`=VALUES(`latitude`),
+        `longitude`=VALUES(`longitude`)
+    """
+
+    # sql 쿼리 적용
+    cursor.executemany(query, data_list)
+
+    # sql 쿼리 실행
+    connection.commit()
+
+    # DB연결 종료
+    connection.close()
 
     print("Finish Import.")
 

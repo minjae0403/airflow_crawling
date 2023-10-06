@@ -1,7 +1,7 @@
 import datetime, csv, sys, os
 import pandas as pd
-from sqlalchemy import create_engine, text ,insert, delete
-from sqlalchemy import Column, Integer, String,  Float
+from sqlalchemy import create_engine, text ,insert, delete, ForeignKey
+from sqlalchemy import Column, Integer, String, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
 
@@ -19,27 +19,26 @@ table_name = 'product'
 db_engine = create_engine(f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_database}')
 
 # CSV 파일을 데이터프레임으로 읽어오기
-csv_file = f'/home/ubuntu/csvfile/modified_products_list_{current_date}.csv'
+csv_file = f'/home/ubuntu/csvfile/products_list_{current_date}.csv'
 
 current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 Base = declarative_base()
+
 
 # table 형태 미리 정의
 class User(Base):
     __tablename__ = table_name
     product_id = Column(Integer, primary_key=True, index=True)
     product_code = Column(Integer, index=True)
-    mart_id = Column(Integer, index=True)
+    mart_id = Column(Integer, ForeignKey('mart.mart_id'), index=True)
     name = Column(String(255), index=True)
     capacity = Column(String(255), index=True)
-    original_price = Column(Integer, index=True)
+    original_price = Column(Float, index=True)
     sale_price = Column(Integer, index=True)
     detail_url = Column(String(255), index=True)
     img_url = Column(String(255), index=True)
     add_date = Column(String(255), index=True)
-    manufacture = Column(String(255), index=True)
-    capacity_2 = Column(String(255), index=True)
-
+   
 def db_table():
     if not inspect(db_engine).has_table(User.__tablename__):
         Base.metadata.create_all(db_engine)
@@ -54,24 +53,22 @@ def db_table():
 def to_map(csv_file_path):
     data_list = []
     try:
-        csvfile = pd.read_csv(csv_file)
-        
-        for row in csvfile.itertuples():
-            print(row)
-            data_list.append(row)
-
-        return data_list
+        csvfile = pd.read_csv(csv_file, encoding='utf-8')
+        csvfile = csvfile.fillna('No_data')
+        insert_csvfile = csvfile.drop_duplicates(['product_id'], keep='first')
+        return insert_csvfile
+    
     except Exception as e:
         print(e)
 
-def import_data(data_list):
-
-    with db_engine.connect() as connection:
-        stmt = insert(User).values(data_list)
-        connection.execute(stmt)
-
-    print("Finish Import.")
+def import_data(csv_file):
+    try:
+        csv_file.to_sql(name=table_name, con=db_engine, if_exists='append', index=False)
+        print("Finish Import.")
+    
+    except Exception as e:
+        print(e)
 
 db_table()
-data_list = to_map(csv_file)
-import_data(data_list)
+insert_csvfile  = to_map(csv_file)
+import_data(insert_csvfile)

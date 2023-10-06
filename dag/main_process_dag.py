@@ -19,8 +19,8 @@ default_args={
 dag = DAG(
     dag_id='Main_process',
     default_args=default_args,
-    description='My first tutorial bash DAG',
-    schedule= '0 0 * * *'
+    description='Crawling and pretreatment process DAG',
+    schedule= '0 16 * * *'
 )
 
 t1 = BashOperator(
@@ -62,18 +62,25 @@ t6 = BashOperator(
 
 t7 = BashOperator(
     task_id='S3_save_mart_csv',
-    bash_command=f'aws s3 cp /home/ubuntu/csvfile/mart_list_with_x_y_{current_date}.csv s3://scvfile/scvfile/',
+    bash_command=f'aws s3 cp /home/ubuntu/csvfile/mart_list_with_x_y_{current_date}.csv s3://scvfile/backup_mart_list/',
     dag=dag
 )
 
 t8 = BashOperator(
     task_id='S3_save_products_csv',
-    bash_command=f'aws s3 cp /home/ubuntu/csvfile/modified_products_list_{current_date}.csv s3://scvfile/scvfile/',
+    bash_command=f'aws s3 cp /home/ubuntu/csvfile/modified_products_list_{current_date}.csv s3://scvfile/backup_product_list/',
+    dag=dag
+)
+
+t9 = BashOperator(
+    task_id='S3_save_mart_with_location_csv',
+    bash_command=f'aws s3 cp /home/ubuntu/csvfile/mart_list_with_location_{current_date}.csv s3://scvfile/backup_mart_list/',
     dag=dag
 )
 
 
+
 t1 >> [t2,t4]
-t2 >> [t7, t3]
+t2 >> [t9, t7, t3]
 t4 >> t5
 t5 >> [t8, t6]
