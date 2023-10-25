@@ -3,7 +3,7 @@ import requests, datetime
 
 current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
-address_csv = pd.read_csv(f"/home/ubuntu/csvfile/mart_list_except_seoul_{current_date}.csv", encoding='utf-8', index_col=0, header=None, names = ['mart_id','name','address','phone'])
+address_csv = pd.read_csv(f"/home/ubuntu/csvfile/mart_list_except_seoul_{current_date}.csv", encoding='utf-8', header=None, names = ['mart_id','name','address','phone'])
 mart_address=address_csv['address']
 
 apiurl = "https://api.vworld.kr/req/address?"
@@ -61,9 +61,9 @@ def split_adress(response):
     return zipcode, country, Cities, county, district, dong
 
 address_list = address_csv.to_numpy().tolist()
+# print(address_list[0])
 
 for info in address_list:
-
     mart_id = info[0]
     mart_longitude = info[4]
     mart_latitudes = info[5]

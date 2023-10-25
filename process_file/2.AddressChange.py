@@ -51,7 +51,7 @@ for mart_num, address in mart_address.items():
     address_csv.loc[address_csv['address'] == address, 'longitude'] = x
 
 # CSV 파일로 저장
-address_csv.to_csv(f'/home/ubuntu/csvfile/mart_list_with_x_y_{current_date}.csv', encoding='utf-8')
+address_csv.to_csv(f'/home/ubuntu/csvfile/mart_list_with_x_y_{current_date}.csv', encoding='utf-8', index=False)
 
 address_list = address_csv.to_numpy().tolist()
 

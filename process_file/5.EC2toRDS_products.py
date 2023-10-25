@@ -1,4 +1,4 @@
-import datetime, csv, sys, os
+import datetime, csv, sys, os, pymysql
 import pandas as pd
 from sqlalchemy import create_engine, text ,insert, delete, ForeignKey
 from sqlalchemy import Column, Integer, String, Float
@@ -24,7 +24,6 @@ csv_file = f'/home/ubuntu/csvfile/products_list_{current_date}.csv'
 current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 Base = declarative_base()
 
-
 # table 형태 미리 정의
 class User(Base):
     __tablename__ = table_name
@@ -42,33 +41,68 @@ class User(Base):
 def db_table():
     if not inspect(db_engine).has_table(User.__tablename__):
         Base.metadata.create_all(db_engine)
-    else:
-        with db_engine.begin() as connection:
-            setting_stme = 'set sql_safe_updates=0;'
-            delete_stmt = delete(Base.metadata.tables[User.__tablename__])
-            connection.execute(text(setting_stme))
-            connection.execute(delete_stmt)
+
 
 #csv to map
 def to_map(csv_file_path):
-    data_list = []
     try:
         csvfile = pd.read_csv(csv_file, encoding='utf-8')
         csvfile = csvfile.fillna('No_data')
-        insert_csvfile = csvfile.drop_duplicates(['product_id'], keep='first')
-        return insert_csvfile
+        csvfile = csvfile.drop_duplicates(['product_id'], keep='first')
+        data_list = csvfile.to_numpy().tolist()
+
+        return data_list
     
     except Exception as e:
         print(e)
 
-def import_data(csv_file):
+def import_data(data_list):
     try:
-        csv_file.to_sql(name=table_name, con=db_engine, if_exists='append', index=False)
+        connection = pymysql.connect(host = db_host, user = db_user, password = db_password, db = db_database)
+        cursor = connection.cursor()
+
+        query =f"""
+        INSERT INTO {table_name} (
+            `product_id`,
+            `product_code`,
+            `mart_id`,
+            `name`,
+            `capacity`,
+            `original_price`,
+            `sale_price`,
+            `detail_url`,
+            `img_url`,
+            `add_date`            
+            )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            `product_id`=VALUES(`product_id`),
+            `product_code`=VALUES(`product_code`),
+            `mart_id`=VALUES(`mart_id`),
+            `name`=VALUES(`name`),
+            `capacity`=VALUES(`capacity`),
+            `original_price`=VALUES(`original_price`),
+            `sale_price`=VALUES(`sale_price`),
+            `detail_url`=VALUES(`detail_url`),
+            `img_url`=VALUES(`img_url`),
+            `add_date`=VALUES(`add_date`)
+            
+        """
+
+        # sql 쿼리 적용
+        cursor.executemany(query, data_list)
+
+        # sql 쿼리 실행
+        connection.commit()
+
+        # DB연결 종료
+        connection.close()
+
         print("Finish Import.")
     
     except Exception as e:
         print(e)
 
 db_table()
-insert_csvfile  = to_map(csv_file)
-import_data(insert_csvfile)
+data_list = to_map(csv_file)
+import_data(data_list)

@@ -11,18 +11,19 @@ current_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
 # 옵션 생성, 창 숨기는 옵션 추가
 options = webdriver.ChromeOptions()
-options.add_argument('--no-sandbox')        
+# options.add_argument('--no-sandbox')        
 options.add_argument('--headless')       
-options.add_argument('--disable-dev-shm-usage')
-options.add_argument("--disable-setuid-sandbox") 
-options.add_argument('--disable-gpu')
+# options.add_argument('--disable-dev-shm-usage')
+# options.add_argument("--disable-setuid-sandbox") 
+# options.add_argument('--disable-gpu')
 options.add_argument("--window-size=1920,1080")
 options.add_argument('--ignore-certificate-errors')
 options.add_argument('--allow-running-insecure-content')
 
+
 service = ChromeService(executable_path = "/usr/bin/chromedriver")
 driver = webdriver.Chrome(service=service, options=options)
-driver.set_page_load_timeout(30000)
+# driver = webdriver.Chrome(options=options)
 
 columns = ['product_id','product_code', 'mart_id', 'name', 'capacity', 'original_price', 'sale_price', 'detail_url', 'img_url','add_date']
 current_date = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -42,8 +43,8 @@ def get_data(mart_url_list, products_list):
     for mart_num, url in list(mart_url_list.items()):
         if '로마켓' in url:
             continue
-        print('마트 번호:',mart_num)
-        print(url)
+
+        print(f'마트번호:{mart_num}')
         driver.get(url)
 
         # 스크롤 높이
@@ -73,7 +74,6 @@ def get_data(mart_url_list, products_list):
             # element가 모두 나올떄 까지 기다리는 코드
             wait = WebDriverWait(driver, 10)
             wait.until(EC.presence_of_element_located((By.ID, "div_goods_detail_main")))
-
 
             element = driver.find_element(By.ID, "div_goods_detail_main")
             li_elements = element.find_elements(By.TAG_NAME, "li")
@@ -137,10 +137,11 @@ def get_data(mart_url_list, products_list):
                     new_df = pd.DataFrame([products_info], columns=columns)
 
                     products_list = pd.concat([products_list,new_df])
+                    
             
             if len(li_elements) != total_products:
                 print(f'{len(li_elements)}개 상품 중 {total_products}개 상품 크롤링 완료')
-            
+
             print('크롤링 완료!')
             
         except Exception as e:

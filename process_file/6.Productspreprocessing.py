@@ -76,7 +76,7 @@ for name in products_name_df['name']:
     elif '해태' in name:
         products_name_df.loc[products_name_df['name'] == name,'manufacture'] = '해태'
     else:
-        products_name_df.loc[products_name_df['name'] == name, 'manufacture'] = 'No_data'
+        products_name_df.loc[products_name_df['name'] == name, 'manufacture'] = ' '
         
 unique_manufacturer = []
 for i in products_name_df['name']:
@@ -107,7 +107,7 @@ for i in products_name_df['capacity']:
             products_name_df.loc[products_name_df['capacity'] == i, 'capacity_2'] = i        
         else:
             products_name_df.loc[products_name_df['capacity'] == i, 'capacity'] = List_i[0]
-            products_name_df.loc[products_name_df['capacity'] == i, 'capacity_2'] = 'No_data'
+            products_name_df.loc[products_name_df['capacity'] == i, 'capacity_2'] = ' '
     elif len(List_i) == 2 or len(List_i) == 3:
         products_name_df.loc[products_name_df['capacity'] == i, 'capacity'] = List_i[0]
         products_name_df.loc[products_name_df['capacity'] == i, 'capacity_2'] = List_i[1]
@@ -138,8 +138,8 @@ for i in products_name_df['capacity']:
     else:
         print(List_i)
 
-products_name_df = products_name_df.fillna('No_data')
-products_name_df = products_name_df.replace(to_replace = '', value = 'No_data')
+products_name_df = products_name_df.fillna(' ')
+products_name_df = products_name_df.replace(to_replace = '', value = ' ')
 
 originProductDF = spark.createDataFrame(products_name_df)
 
@@ -154,25 +154,25 @@ newProductDF = originProductDF.toPandas()
 
 try:
     for i in range(len(id_list)):
-        first_name = newProductDF[newProductDF['product_code'] == id_list[i]].name
+        first_name = (newProductDF[newProductDF['product_code'] == id_list[i]].iloc[0])['name']
         # print(first_name)
-        first_manufacture = 'No_data'
+        first_manufacture = ' '
         a = 0
         try:
-            while(first_manufacture == 'No_data'):
+            while(first_manufacture == ' '):
                 first_manufacture = newProductDF[newProductDF['product_code'] == id_list[i]].iloc[a].manufacture
                 a += 1
         except:
-            first_manufacture = 'No_data'
+            first_manufacture = ' '
             a += 1
         a = 0
-        first_capacity_2 = 'No_data'
+        first_capacity_2 = ' '
         try:
-            while(first_capacity_2 == 'No_data'):
+            while(first_capacity_2 == ' '):
                 first_capacity_2 = newProductDF[newProductDF['product_code'] == id_list[i]].iloc[a].capacity_2
                 a += 1
         except:
-            first_capacity_2 = 'No_data'
+            first_capacity_2 = ' '
             a += 1
         for j in range(id_count[i]):
             newProductDF.loc[newProductDF['product_code'] == id_list[i], 'name'] = first_name
@@ -181,46 +181,48 @@ try:
 except Exception as e:
     print(e)
 
-newProductDF.to_csv('first_modified_product_list.csv',index=False, encoding='utf-8')
-
-# 식자재 csv데이터 로드
-originProductDF = spark.read.option("header","True").csv("first_modified_product_list.csv")
-
-id_count_df = originProductDF.groupBy('product_id').count()
-id_list = id_count_df.select('product_id').rdd.flatMap(lambda x: x).collect()
-id_count = id_count_df.select('count').rdd.flatMap(lambda x: x).collect()
-
-schema = originProductDF.schema
-newDF = spark.createDataFrame([], schema)
-newProductDF = originProductDF.toPandas()
-
-try:
-    for i in range(len(id_list)):
-        first_name = newProductDF[newProductDF['product_id'] == id_list[i]].name
-        first_manufacture = 'No_data'
-        a = 0
-        try:
-            while(first_manufacture == 'No_data'):
-                first_manufacture = newProductDF[newProductDF['product_id'] == id_list[i]].iloc[a].manufacture
-                a += 1
-        except:
-            first_manufacture = 'No_data'
-            a += 1
-        a = 0
-        first_product_capacity_2 = 'No_data'
-        try:
-            while(first_product_capacity_2 == 'No_data'):
-                first_product_capacity_2 = newProductDF[newProductDF['product_id'] == id_list[i]].iloc[a].capacity_2
-                a += 1
-        except:
-            first_product_capacity_2 = 'No_data'
-            a += 1
-        for j in range(id_count[i]):
-            newProductDF.loc[newProductDF['product_id'] == id_list[i], 'name'] = first_name
-            newProductDF.loc[newProductDF['product_id'] == id_list[i], 'manufacture'] = first_manufacture
-            newProductDF.loc[newProductDF['product_id'] == id_list[i], 'capacity_2'] = first_product_capacity_2
-except Exception as e:
-    print(e)
+#newProductDF.to_csv('first_modified_product_list.csv',index=False, encoding='utf-8')
+#
+## 식자재 csv데이터 로드
+#originProductDF = spark.read.option("header","True").csv("first_modified_product_list.csv")
+#
+#originProductDF = originProductDF.replace(to_replace = ' ', value = 'No_data')
+#
+#id_count_df = originProductDF.groupBy('product_id').count()
+#id_list = id_count_df.select('product_id').rdd.flatMap(lambda x: x).collect()
+#id_count = id_count_df.select('count').rdd.flatMap(lambda x: x).collect()
+#
+#schema = originProductDF.schema
+#newDF = spark.createDataFrame([], schema)
+#newProductDF = originProductDF.toPandas()
+#
+#try:
+#    for i in range(len(id_list)):
+#        first_name = (newProductDF[newProductDF['product_id'] == id_list[i]].iloc[0])['name']
+#        first_manufacture = 'No_data'
+#        a = 0
+#        try:
+#            while(first_manufacture == 'No_data'):
+#                first_manufacture = newProductDF[newProductDF['product_id'] == id_list[i]].iloc[a].manufacture
+#                a += 1
+#        except:
+#            first_manufacture = 'No_data'
+#            a += 1
+#        a = 0
+#        first_product_capacity_2 = 'No_data'
+#        try:
+#            while(first_product_capacity_2 == 'No_data'):
+#                first_product_capacity_2 = newProductDF[newProductDF['product_id'] == id_list[i]].iloc[a].capacity_2
+#                a += 1
+#        except:
+#            first_product_capacity_2 = 'No_data'
+#            a += 1
+#        for j in range(id_count[i]):
+#            newProductDF.loc[newProductDF['product_id'] == id_list[i], 'name'] = first_name
+#            newProductDF.loc[newProductDF['product_id'] == id_list[i], 'manufacture'] = first_manufacture
+#            newProductDF.loc[newProductDF['product_id'] == id_list[i], 'capacity_2'] = first_product_capacity_2
+#except Exception as e:
+#    print(e)
 
 newProductDF=newProductDF.drop_duplicates(['product_id'], keep='first')
 
